@@ -1,0 +1,213 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens. Components only ever use the semantic Tailwind names below
+ * (bg-surface, text-content-muted, border-status-critical...), never raw colours.
+ * Theme switching swaps the variables, so there are no dark: variants anywhere.
+ */
+:root {
+	color-scheme: light;
+
+	--bg: #f4f1ea;
+	--surface: #ffffff;
+	--surface-raised: #fbfaf6;
+	--overlay: rgb(20 18 14 / 0.55);
+
+	--content: #1b1a17;
+	--content-muted: #57534a;
+	--content-inverse: #ffffff;
+
+	--border: #d9d4c7;
+	--border-strong: #7d7766;
+	--focus: #0b5fa5;
+
+	--primary: #0b5fa5;
+	--primary-foreground: #ffffff;
+	--secondary: #e3eaf2;
+	--secondary-foreground: #12385c;
+	--accent: #0f766e;
+
+	--status-critical: #c4161c;
+	--status-critical-bg: #fde8e7;
+	--status-critical-fg: #8f0e14;
+	--status-attention: #cc5f00;
+	--status-attention-bg: #ffecd6;
+	--status-attention-fg: #7a3600;
+	--status-watch: #9a7400;
+	--status-watch-bg: #faf1c7;
+	--status-watch-fg: #5c4400;
+	--status-healthy: #1f7a3d;
+	--status-healthy-bg: #e1f3e6;
+	--status-healthy-fg: #135227;
+	--status-nosignal: #5f6368;
+	--status-nosignal-bg: #e8e8e6;
+	--status-nosignal-fg: #36383b;
+
+	--live: #1f7a3d;
+	--live-bg: #e1f3e6;
+	--live-fg: #135227;
+	--delayed: #9a7400;
+	--delayed-bg: #faf1c7;
+	--delayed-fg: #5c4400;
+	--offline: #3d3a33;
+	--offline-bg: #e9e6dd;
+	--offline-fg: #1b1a17;
+}
+
+[data-theme='dark'] {
+	color-scheme: dark;
+
+	--bg: #0e1116;
+	--surface: #171b22;
+	--surface-raised: #1f252e;
+	--overlay: rgb(0 0 0 / 0.65);
+
+	--content: #f2f4f7;
+	--content-muted: #aab3c0;
+	--content-inverse: #0e1116;
+
+	--border: #2d3541;
+	--border-strong: #6b7788;
+	--focus: #8cc4ff;
+
+	--primary: #6ab0ff;
+	--primary-foreground: #06182b;
+	--secondary: #243247;
+	--secondary-foreground: #d6e6fa;
+	--accent: #5eead4;
+
+	--status-critical: #ff5a52;
+	--status-critical-bg: #3a1416;
+	--status-critical-fg: #ffb9b3;
+	--status-attention: #ffa23a;
+	--status-attention-bg: #3a2410;
+	--status-attention-fg: #ffd2a1;
+	--status-watch: #e8c547;
+	--status-watch-bg: #342d0c;
+	--status-watch-fg: #f3e19a;
+	--status-healthy: #4cc27a;
+	--status-healthy-bg: #11301d;
+	--status-healthy-fg: #a6e6bf;
+	--status-nosignal: #98a2b0;
+	--status-nosignal-bg: #252b33;
+	--status-nosignal-fg: #c9d0d9;
+
+	--live: #4cc27a;
+	--live-bg: #11301d;
+	--live-fg: #a6e6bf;
+	--delayed: #e8c547;
+	--delayed-bg: #342d0c;
+	--delayed-fg: #f3e19a;
+	--offline: #c9d0d9;
+	--offline-bg: #2a303a;
+	--offline-fg: #f2f4f7;
+}
+
+@theme inline {
+	--color-bg: var(--bg);
+	--color-surface: var(--surface);
+	--color-surface-raised: var(--surface-raised);
+	--color-overlay: var(--overlay);
+
+	--color-content: var(--content);
+	--color-content-muted: var(--content-muted);
+	--color-content-inverse: var(--content-inverse);
+
+	--color-border: var(--border);
+	--color-border-strong: var(--border-strong);
+	--color-focus: var(--focus);
+
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-accent: var(--accent);
+
+	--color-status-critical: var(--status-critical);
+	--color-status-critical-bg: var(--status-critical-bg);
+	--color-status-critical-fg: var(--status-critical-fg);
+	--color-status-attention: var(--status-attention);
+	--color-status-attention-bg: var(--status-attention-bg);
+	--color-status-attention-fg: var(--status-attention-fg);
+	--color-status-watch: var(--status-watch);
+	--color-status-watch-bg: var(--status-watch-bg);
+	--color-status-watch-fg: var(--status-watch-fg);
+	--color-status-healthy: var(--status-healthy);
+	--color-status-healthy-bg: var(--status-healthy-bg);
+	--color-status-healthy-fg: var(--status-healthy-fg);
+	--color-status-nosignal: var(--status-nosignal);
+	--color-status-nosignal-bg: var(--status-nosignal-bg);
+	--color-status-nosignal-fg: var(--status-nosignal-fg);
+
+	--color-live: var(--live);
+	--color-live-bg: var(--live-bg);
+	--color-live-fg: var(--live-fg);
+	--color-delayed: var(--delayed);
+	--color-delayed-bg: var(--delayed-bg);
+	--color-delayed-fg: var(--delayed-fg);
+	--color-offline: var(--offline);
+	--color-offline-bg: var(--offline-bg);
+	--color-offline-fg: var(--offline-fg);
+}
+
+@theme {
+	--font-sans:
+		ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+		sans-serif;
+
+	/* Type scale: nothing below 14px, body at 17px for gloved, glancing reads. */
+	--text-display: 2rem;
+	--text-display--line-height: 1.1;
+	--text-title: 1.375rem;
+	--text-title--line-height: 1.25;
+	--text-body: 1.0625rem;
+	--text-body--line-height: 1.4;
+	--text-label: 0.9375rem;
+	--text-label--line-height: 1.3;
+	--text-caption: 0.875rem;
+	--text-caption--line-height: 1.35;
+
+	/* Touch targets: 56px minimum, 64px for primary tappable cards. */
+	--spacing-touch: 3.5rem;
+	--spacing-touch-lg: 4rem;
+
+	--radius-card: 1rem;
+	--radius-chip: 0.5rem;
+}
+
+html {
+	background: var(--bg);
+	color: var(--content);
+	-webkit-text-size-adjust: 100%;
+	-webkit-tap-highlight-color: transparent;
+}
+
+body {
+	font-family: var(--font-sans);
+	font-size: var(--text-body);
+	line-height: 1.4;
+	margin: 0;
+	background: var(--bg);
+	color: var(--content);
+}
+
+:focus-visible {
+	outline: 3px solid var(--focus);
+	outline-offset: 2px;
+}
+
+button {
+	cursor: pointer;
+	touch-action: manipulation;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
