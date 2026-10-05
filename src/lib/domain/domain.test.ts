@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Animal, Flag } from '../api/types';
 import { generateHerd } from '../api/mock/generate';
+import { acknowledge, isAcknowledged, unacknowledge } from './acknowledge';
 import { applyStreamEvent } from './events';
 import { computeFreshness } from './freshness';
 import { describeFlag, confidenceWord } from './flagCopy';
@@ -146,5 +147,35 @@ describe('copy', () => {
 		expect(formatDuration(162 * 60_000)).toBe('2 h 42 min');
 		expect(formatAgo(10_000)).toBe('just now');
 		expect(formatAgo(5 * 60_000)).toBe('5 min ago');
+	});
+});
+describe('acknowledge', () => {
+	const day = new Date(NOW).toDateString();
+	const sick = () => herd.find((a) => a.status === 'attention') as Animal;
+
+	it('hides an animal until something about it changes', () => {
+		const animal = structuredClone(sick());
+		const acks = acknowledge({}, animal, NOW);
+		expect(isAcknowledged(acks, animal, day)).toBe(true);
+		applyStreamEvent(animal, {
+			type: 'flag_raised',
+			animalId: animal.id,
+			at: new Date(NOW).toISOString(),
+			flag: { code: 'TEMP_HIGH', severity: 'high', confidence: 0.9 },
+			statusChangedTo: 'critical'
+		});
+		expect(isAcknowledged(acks, animal, day)).toBe(false);
+	});
+
+	it('only counts for the day it was made, and can be undone', () => {
+		const animal = sick();
+		const acks = acknowledge({}, animal, NOW);
+		expect(isAcknowledged(acks, animal, new Date(NOW + 24 * 3_600_000).toDateString())).toBe(false);
+		expect(isAcknowledged(unacknowledge(acks, animal.id), animal, day)).toBe(false);
+	});
+
+	it('never applies to healthy animals', () => {
+		const animal = herd.find((a) => a.status === 'healthy') as Animal;
+		expect(isAcknowledged(acknowledge({}, animal, NOW), animal, day)).toBe(false);
 	});
 });

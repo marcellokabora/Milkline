@@ -192,6 +192,16 @@
 			</Section>
 		{/if}
 
+		{#if herd.seen.length}
+			<Section id="section-seen" title="Seen today" count={herd.seen.length} collapsible>
+				<div class="grid gap-3 lg:grid-cols-2">
+					{#each herd.seen as animal (animal.id)}
+						<AnimalRow {animal} now={herd.now} muted={outdated} onopen={(id) => herd.open(id)} />
+					{/each}
+				</div>
+			</Section>
+		{/if}
+
 		<Section
 			id="section-healthy"
 			title="Healthy"
@@ -219,7 +229,17 @@
 {/if}
 
 {#if herd.selected}
-	<DetailSheet animal={herd.selected} now={herd.now} onclose={() => herd.close()} />
+	<DetailSheet
+		animal={herd.selected}
+		now={herd.now}
+		seenAt={herd.seenAt(herd.selected.id)}
+		onacknowledge={() => {
+			if (herd.selected) herd.acknowledge(herd.selected.id);
+			herd.close();
+		}}
+		onundo={() => herd.selected && herd.undoAcknowledge(herd.selected.id)}
+		onclose={() => herd.close()}
+	/>
 {/if}
 
 {#if import.meta.env.DEV && demoOpen}

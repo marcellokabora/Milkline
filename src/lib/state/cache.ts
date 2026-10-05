@@ -1,4 +1,5 @@
 import type { Animal } from '../api/types';
+import type { Acknowledgements } from '../domain/acknowledge';
 
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
@@ -35,9 +36,30 @@ export function saveCachedHerd(herdId: string, savedAt: number, animals: Animal[
 	}
 }
 
+const acksKey = (herdId: string) => `milkline:acks:${herdId}`;
+
+export function loadAcknowledgements(herdId: string): Acknowledgements {
+	try {
+		const raw = localStorage.getItem(acksKey(herdId));
+		const parsed = raw ? JSON.parse(raw) : null;
+		return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+	} catch {
+		return {};
+	}
+}
+
+export function saveAcknowledgements(herdId: string, acks: Acknowledgements): void {
+	try {
+		localStorage.setItem(acksKey(herdId), JSON.stringify(acks));
+	} catch {
+		// Storage full or blocked: acknowledgements last for this session only.
+	}
+}
+
 export function clearCachedHerd(herdId: string): void {
 	try {
 		localStorage.removeItem(key(herdId));
+		localStorage.removeItem(acksKey(herdId));
 	} catch {
 		// ignore
 	}

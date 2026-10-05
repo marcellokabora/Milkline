@@ -1,11 +1,23 @@
 import { fetchHerd, HerdApiError, type HerdSnapshot } from '../api/herdApi';
 import { createMockStream } from '../api/stream';
 import type { Animal, AnimalStatus, MockScenario, StreamEvent } from '../api/types';
+import {
+	acknowledge,
+	isAcknowledged,
+	unacknowledge,
+	type Acknowledgements
+} from '../domain/acknowledge';
 import { applyStreamEvent } from '../domain/events';
 import { computeFreshness } from '../domain/freshness';
 import { compareByPriority } from '../domain/priority';
 import { searchAnimals } from '../domain/search';
-import { clearCachedHerd, loadCachedHerd, saveCachedHerd } from './cache';
+import {
+	clearCachedHerd,
+	loadAcknowledgements,
+	loadCachedHerd,
+	saveAcknowledgements,
+	saveCachedHerd
+} from './cache';
 
 const HERD_ID = 'h_4417';
 const SLOW_NOTICE_MS = 2000;
@@ -53,6 +65,10 @@ class HerdStore {
 	lastDataAt = $state<number | null>(null);
 	now = $state(Date.now());
 
+	acks = $state.raw<Acknowledgements>({});
+	// A string, so dependants only recompute when the day changes, not every tick.
+	today = $derived(new Date(this.now).toDateString());
+
 	query = $state('');
 	selectedId = $state<string | null>(null);
 	sim = $state({ slow: false, fail: false, offline: false, stall: false });
@@ -77,7 +93,7 @@ class HerdStore {
 			no_signal: 0,
 			healthy: 0
 		};
-		for (const a of this.list) c[a.status]++;
+		for (const a of this.list) if (!this.isSeen(a)) c[a.status]++;
 		return c;
 	});
 
@@ -97,6 +113,7 @@ class HerdStore {
 	healthy = $derived(
 		this.group(['healthy']).sort((a, b) => a.tag.localeCompare(b.tag))
 	);
+	seen = $derived(this.group(['critical', 'attention', 'watch', 'no_signal'], true));
 
 	isSearching = $derived(this.query.trim().length > 0);
 	results = $derived(this.isSearching ? searchAnimals(this.list, this.query) : []);
@@ -117,10 +134,35 @@ class HerdStore {
 	private retryAttempt = 0;
 	private lastCacheWrite = 0;
 
-	private group(statuses: AnimalStatus[]): Animal[] {
+	private group(statuses: AnimalStatus[], seen = false): Animal[] {
 		return this.displayed.order
-			.filter((id) => statuses.includes(this.displayed.status[id]))
+			.filter(
+				(id) =>
+					statuses.includes(this.displayed.status[id]) && this.isSeen(this.animals[id]) === seen
+			)
 			.map((id) => this.animals[id]);
+	}
+
+	/** True when the farmer has handled this animal today and nothing about it has changed since. */
+	isSeen(animal: Animal): boolean {
+		return isAcknowledged(this.acks, animal, this.today);
+	}
+
+	seenAt(id: string): number | null {
+		const animal = this.animals[id];
+		return animal && this.isSeen(animal) ? this.acks[id].at : null;
+	}
+
+	acknowledge(id: string) {
+		const animal = this.animals[id];
+		if (!animal || animal.status === 'healthy') return;
+		this.acks = acknowledge(this.acks, animal, Date.now());
+		saveAcknowledgements(this.herdId, this.acks);
+	}
+
+	undoAcknowledge(id: string) {
+		this.acks = unacknowledge(this.acks, id);
+		saveAcknowledgements(this.herdId, this.acks);
 	}
 
 	start(initialScenario?: string | null): () => void {
@@ -137,6 +179,7 @@ class HerdStore {
 		window.addEventListener('offline', goOffline);
 		window.addEventListener('pagehide', persist);
 
+		this.acks = loadAcknowledgements(this.herdId);
 		this.restoreFromCache();
 		void this.load();
 
