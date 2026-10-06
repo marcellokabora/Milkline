@@ -3,8 +3,11 @@ import { version } from '$app/env';
 import { assets, immutable } from '$app/manifest';
 
 const CACHE = `milkline-${version}`;
-const SHELL = '/';
-const ASSETS = [...immutable, ...assets].map((asset) => `/${asset.path}`);
+// The scope is the deploy root, so this also works when the app is served from a sub-path.
+const SCOPE = self.registration.scope;
+const SHELL = SCOPE;
+const ASSETS = [...immutable, ...assets].map((asset) => new URL(asset.path, SCOPE).pathname);
+const API_PATH = new URL('api/', SCOPE).pathname;
 
 self.addEventListener('install', (event) => {
 	event.waitUntil(
@@ -30,7 +33,7 @@ self.addEventListener('fetch', (event) => {
 
 	const url = new URL(request.url);
 	// Live herd data (including the event stream) must always come from the network, never a stale copy.
-	if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+	if (url.origin !== self.location.origin || url.pathname.startsWith(API_PATH)) return;
 
 	if (request.mode === 'navigate') {
 		event.respondWith(

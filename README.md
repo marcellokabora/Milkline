@@ -63,6 +63,59 @@ The app has a web manifest ([manifest.webmanifest](static/manifest.webmanifest),
 - To try it: `npm run build && node build`, open it in Chrome, then use the **Install** button in the top bar (shown when the browser offers installation). Switch DevTools to offline and reload to check the shell loads.
 - In `npm run dev` the service worker is not a reliable test, so use the production build.
 
+## Deploy to GitHub Pages
+
+[deploy.yml](.github/workflows/deploy.yml) runs on every push to `main`: `npm ci`, `npm run check`, `npm test`, a static build, then deploys it to GitHub Pages at `https://<user>.github.io/<repo>/`.
+
+One-time setup: in the repository go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**. Then push to `main` (or run the workflow by hand from the **Actions** tab). The deployed URL is shown on the `deploy` job.
+
+How a static host works with this app:
+
+- `DEPLOY_TARGET=pages` switches the build from `adapter-node` to `adapter-static` (a single-page app, `index.html` fallback). `BASE_PATH=/<repo>` is the sub-path Pages serves from. Both are read in [vite.config.ts](vite.config.ts). Without them, `npm run build` is the normal Node build.
+- Pages has no server, so the mock API cannot be a SvelteKit route there. In this build `fetchPage` calls the same mock code in the browser ([handler.ts](src/lib/api/mock/handler.ts)), which the server route also uses, so both behave the same. `?mock=slow`, `?mock=fail` and the simulate panel all work.
+- The manifest uses relative URLs and the service worker derives its paths from its own scope, so installing and offline work under `/<repo>/`.
+
+Test the production build locally, the way Pages will serve it:
+
+```
+$env:DEPLOY_TARGET='pages'; $env:BASE_PATH='/Milkline'; npm run build
+```
+
+Then serve the `build` folder under `/Milkline/` (for example copy it to `some-dir/Milkline` and run `npx serve some-dir`) and open `http://localhost:3000/Milkline/`. To check the live site, open the deployed URL, confirm "120 animals" loads, try `?mock=fail`, and use **Install** in Chrome.
+
+## Capacitor versus React Native for the app stores
+
+These are estimates, not measurements; nothing has been ported. The question: what does it cost to ship this app to the Apple and Google stores with Capacitor, compared with rebuilding it in React Native?
+
+**React Native means a rewrite, and more code.** The pure logic (`src/lib/domain/`, `herdApi.ts`, `types.ts`, the mock generator) has no Svelte in it and carries over unchanged. The rest is rebuilt:
+
+- **State** ([herd.svelte.ts](src/lib/state/herd.svelte.ts)): React has no `$derived`, so every derived value becomes a `useMemo` with a dependency array (or a selector in a library such as Zustand). The timers, listeners and abort controller in `start()` become `useEffect` and `useRef`. Expect roughly 30-50% more code, plus the usual hooks pitfalls (stale closures, missing dependencies).
+- **UI:** HTML and CSS are replaced by `View`, `Text`, `FlatList` and `StyleSheet`, so every component is rewritten. The Tailwind tokens and dark mode need a native equivalent. JSX with handlers is also longer than Svelte markup, roughly 10-30% more.
+- **Platform APIs:** `AsyncStorage` replaces `localStorage`, and `NetInfo` and `AppState` replace the `online`/`offline`/`pagehide` events. The service worker and PWA code go away.
+- **Overall:** about 15-25% more code, concentrated in the state and UI layers, and the UI work is a rewrite rather than a conversion.
+
+**Capacitor keeps the Svelte app and adds a thin native shell,** so the cost is mostly configuration, probably under 100 lines of new code:
+
+- Add `@capacitor/core`, `@capacitor/cli`, `@capacitor/ios` and `@capacitor/android`.
+- A `capacitor.config.ts` of about 10 lines (app id, app name, `webDir: 'build'`).
+- `npx cap add ios` and `npx cap add android` generate the native projects. Generate icons and splash screens from the existing artwork.
+- Optional native plugins: `@capacitor/network` and `@capacitor/app` (more reliable than `navigator.onLine` and `pagehide`), and push notifications for critical alerts.
+
+Two things must change first:
+
+1. **The build must be static.** The project uses `adapter-node`. Capacitor needs `adapter-static` with `fallback: 'index.html'` and `ssr = false` in `+layout.ts`, about 5 lines.
+2. **The mock API will not exist inside the app.** [+server.ts](src/routes/api/v1/herds/[herdId]/animals/+server.ts) is a server route and a static app has no server. Point `fetchPage` at an absolute base URL for the real backend (see "Integrating with the real API"), or move the mock generator into the client for a demo build. This is the largest change. Also disable the service worker in the native build.
+
+React Native has the same backend requirement, since it also cannot call a SvelteKit route.
+
+**Getting into the stores is mostly non-code work, and identical for both:**
+
+- An Apple Developer account (about $99 a year) and a Google Play account (about $25 once), a Mac with Xcode for iOS builds, and signing certificates and provisioning profiles.
+- Store listings: screenshots, a privacy policy and an age rating.
+- App review. Apple can reject thin web wrappers (guideline 4.2), so a Capacitor app should use at least some native features, such as push notifications. React Native apps are native UI and do not have this risk.
+
+**Verdict:** for a list-and-status app like this one, Capacitor is the cheaper route because all the existing UI, state and tests are reused. React Native is worth it only if the app later needs very smooth, native-feeling interactions or deep native integration.
+
 ## How it is put together
 
 ```

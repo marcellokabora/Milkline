@@ -15,6 +15,13 @@ export interface FetchOptions {
 	timeoutMs?: number;
 }
 
+/** A static deploy (GitHub Pages) has no server, so the mock backend answers inside the browser. */
+async function send(url: string, init: RequestInit): Promise<Response> {
+	if (!__MOCK_IN_BROWSER__) return fetch(url, init);
+	const { handleAnimalsRequest } = await import('./mock/handler');
+	return handleAnimalsRequest(new Request(new URL(url, location.href), init));
+}
+
 async function fetchPage(
 	herdId: string,
 	page: number,
@@ -23,7 +30,7 @@ async function fetchPage(
 	const timeout = AbortSignal.timeout(timeoutMs);
 	const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
 	try {
-		const res = await fetch(`/api/v1/herds/${herdId}/animals?page=${page}`, {
+		const res = await send(`/api/v1/herds/${herdId}/animals?page=${page}`, {
 			signal: combined,
 			headers: scenario ? { 'x-mock-scenario': scenario } : undefined
 		});

@@ -10,4 +10,9 @@ declare global {
 	}
 }
 
+declare global {
+	/** Set at build time: true for the static GitHub Pages build, which has no server for the mock API. */
+	const __MOCK_IN_BROWSER__: boolean;
+}
+
 export {};

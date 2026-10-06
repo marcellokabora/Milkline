@@ -1,9 +1,15 @@
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
-import adapter from '@sveltejs/adapter-node';
+import adapterNode from '@sveltejs/adapter-node';
+import adapterStatic from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 
+// DEPLOY_TARGET=pages builds a static single-page app for GitHub Pages, served under /<repo>/.
+const pages = process.env.DEPLOY_TARGET === 'pages';
+const base = (process.env.BASE_PATH ?? '') as '' | `/${string}`;
+
 export default defineConfig({
+	define: { __MOCK_IN_BROWSER__: JSON.stringify(pages) },
 	plugins: [
 		tailwindcss(),
 		sveltekit({
@@ -12,7 +18,8 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter(),
+			adapter: pages ? adapterStatic({ fallback: 'index.html' }) : adapterNode(),
+			paths: { base },
 			inspector: true,
 		})
 	],
