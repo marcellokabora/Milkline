@@ -3,6 +3,9 @@
 The first screen a dairy farmer sees at 5am: which animals need me today, where are they, and can I trust what I'm looking at. Built with SvelteKit (Svelte 5), TypeScript and Tailwind CSS v4, against a mock API.
 
 **Stack note:** the brief asks for React or Next. I chose Svelte 5 / SvelteKit instead. The concerns the brief grades (reusable components, server-state handling, tokens, live-versus-held data) do not depend on the framework: the domain logic in `src/lib/domain` is plain TypeScript, and the `StreamClient` and fetch layers are framework-free.
+
+**Live demo:** https://marcellokabora.github.io/Milkline/ (GitHub Pages, redeployed on every push to `main`). It can be installed as an app (PWA), see [Install as an app](#install-as-an-app-pwa).
+
 ## Run it
 
 ```sh
@@ -58,6 +61,13 @@ Things to know when wiring it up:
 
 The app has a web manifest ([manifest.webmanifest](static/manifest.webmanifest), icons in `static/icons`) and a service worker ([service-worker/index.ts](src/service-worker/index.ts)), which SvelteKit registers automatically in production builds.
 
+**Install it from the live site:** open https://marcellokabora.github.io/Milkline/ and install it.
+
+- **Chrome / Edge (desktop and Android):** use the **Install** button in the top bar, or the install icon in the address bar.
+- **iOS Safari:** Share → **Add to Home Screen**.
+
+The app icons (192, 512, maskable and Apple touch) are rendered from the same drop logo as [favicon.svg](static/favicon.svg), so the home-screen icon matches the browser tab.
+
 - The service worker caches the app shell and static assets, so the app opens with no signal. Navigations are network-first and fall back to the cached shell.
 - `/api/*` is never cached by the service worker, so herd data is never served stale without saying so. The last herd lives in `localStorage` instead, with its age shown.
 - To try it: `npm run build && node build`, open it in Chrome, then use the **Install** button in the top bar (shown when the browser offers installation). Switch DevTools to offline and reload to check the shell loads.
@@ -65,7 +75,7 @@ The app has a web manifest ([manifest.webmanifest](static/manifest.webmanifest),
 
 ## Deploy to GitHub Pages
 
-[deploy.yml](.github/workflows/deploy.yml) runs on every push to `main`: `npm ci`, `npm run check`, `npm test`, a static build, then deploys it to GitHub Pages at `https://<user>.github.io/<repo>/`.
+[deploy.yml](.github/workflows/deploy.yml) runs on every push to `main`: `npm ci`, `npm run check`, `npm test`, a static build, then deploys it to GitHub Pages at `https://<user>.github.io/<repo>/`. For this repository that is https://marcellokabora.github.io/Milkline/.
 
 One-time setup: in the repository go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**. Then push to `main` (or run the workflow by hand from the **Actions** tab). The deployed URL is shown on the `deploy` job.
 
@@ -147,10 +157,12 @@ src/routes/layout.css  design tokens
 - The mock stream runs in the browser, not over a real socket, and no reconnect backoff exists for the stream itself (the herd fetch retries at 5, 10, 20, 30 s).
 - The service worker is basic (precache plus network-first navigation). No update prompt when a new version is deployed, and no background sync. It has not been tested on iOS Safari.
 - No auth, base-URL config or env vars for the real API (see "Integrating with the real API").
+- No push notifications: alerts only reach a farmer who has the app open.
 - Tests cover the pure domain logic only; the store and components are verified by hand and in a browser.
 
 ## What I would do next
 
+- Push notifications for critical alerts, so they reach a farmer who has the app closed (see "Next step: push notifications for alerts").
 - Replace the mock stream with the real WebSocket, with reconnect backoff and heartbeat-based staleness instead of message-based.
 - Move the cached herd from `localStorage` to IndexedDB (in the service worker's reach), and add an "update available" prompt.
 - Test with farmers: tap accuracy with gloves, glare, and whether "tap to update" is understood.
