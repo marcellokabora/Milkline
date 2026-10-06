@@ -56,11 +56,16 @@
       : ''}"
   >
     <VerdictIcon class="size-6 shrink-0" aria-hidden="true" />
-    <h2 id="verdict" class="min-w-0 flex-1 truncate text-title font-extrabold">
-      {verdict.headline}{verdict.detail ? ` · ${verdict.detail}` : ''}
+    <h2
+      id="verdict"
+      class="min-w-0 flex-1 text-title font-extrabold wrap-break-word p-2"
+    >
+      {verdict.headline}{verdict.detail ? ` · ${verdict.detail}` : ""}
     </h2>
     {#if outdated && lastDataAt !== null}
-      <span class="inline-flex shrink-0 items-center gap-1 text-label font-bold">
+      <span
+        class="inline-flex shrink-0 items-center gap-1 text-label font-bold"
+      >
         <Clock class="size-4" aria-hidden="true" />
         {formatClock(lastDataAt, now)}
       </span>

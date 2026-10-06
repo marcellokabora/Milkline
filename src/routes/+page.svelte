@@ -36,10 +36,11 @@
 	const showLoading = $derived(herd.loadState === 'idle' || herd.loadState === 'loading');
 
 	async function jump(target: JumpTarget) {
-		if (target === 'healthy') {
-			healthyOpen = true;
-			await tick();
-		}
+		// The tiles count live data, so bring the frozen list up to date first, like the refresh pill.
+		herd.query = '';
+		herd.applyPending();
+		if (target === 'healthy') healthyOpen = true;
+		await tick();
 		const id = { needs: 'section-needs', watch: 'section-watch', silent: 'section-silent', healthy: 'section-healthy' }[target];
 		document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
