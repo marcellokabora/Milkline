@@ -29,6 +29,8 @@ class ThemeStore {
 	private apply(theme: Theme) {
 		this.resolved = theme;
 		document.documentElement.dataset.theme = theme;
+		const bar = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+		if (bar) bar.content = theme === 'dark' ? '#0e1116' : '#f4f1ea';
 	}
 }
 

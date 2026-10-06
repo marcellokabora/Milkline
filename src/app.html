@@ -9,7 +9,7 @@
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
 		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
 		<link rel="apple-touch-icon" href="%sveltekit.assets%/icons/apple-touch-icon.png" />
-		<meta name="theme-color" content="#0b5fa5" />
+		<meta name="theme-color" content="#f4f1ea" />
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-title" content="Milkline" />
@@ -20,6 +20,8 @@
 					var pref = localStorage.getItem('milkline:theme');
 					var dark = pref ? pref === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
 					document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+					// Keep the phone's status bar the same colour as the page background.
+					document.querySelector('meta[name="theme-color"]').content = dark ? '#0e1116' : '#f4f1ea';
 				} catch (e) {}
 			})();
 		</script>
